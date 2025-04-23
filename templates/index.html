@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <!-- Search Bar -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <form method="GET" action="{{ url_for('index') }}" class="d-flex gap-2">
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="bi bi-search"></i>
+          </span>
+          <input type="text" name="q" class="form-control" 
+                 placeholder="Search products..." 
+                 value="{{ search_query or '' }}"
+                 aria-label="Search">
+          <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Filters Sidebar -->
+    <div class="col-lg-3 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3">
+            <i class="bi bi-funnel"></i> Filters
+          </h5>
+          <form method="GET" id="filterForm">
+            {% if search_query %}
+              <input type="hidden" name="q" value="{{ search_query }}">
+            {% endif %}
+            
+            <div class="mb-3">
+              <label class="form-label">Price Range</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">$</span>
+                    <input type="number" name="min_price" class="form-control" 
+                           placeholder="Min" value="{{ min_price or '' }}"
+                           min="{{ price_range[0]|round(2) if price_range[0] }}"
+                           max="{{ price_range[1]|round(2) if price_range[1] }}">
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">$</span>
+                    <input type="number" name="max_price" class="form-control" 
+                           placeholder="Max" value="{{ max_price or '' }}"
+                           min="{{ price_range[0]|round(2) if price_range[0] }}"
+                           max="{{ price_range[1]|round(2) if price_range[1] }}">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Sort By</label>
+              <select name="sort" class="form-select form-select-sm">
+                <option value="newest" {% if sort == 'newest' %}selected{% endif %}>
+                  Newest First
+                </option>
+                <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>
+                  Price: Low to High
+                </option>
+                <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>
+                  Price: High to Low
+                </option>
+                <option value="name" {% if sort == 'name' %}selected{% endif %}>
+                  Name: A to Z
+                </option>
+                <option value="rating" {% if sort == 'rating' %}selected{% endif %}>
+                  Highest Rated
+                </option>
+              </select>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-funnel-fill"></i> Apply Filters
+              </button>
+              <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x-circle"></i> Clear All
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {% if current_user.is_authenticated %}
+        <div class="d-grid mt-3">
+          <a href="{{ url_for('create_product') }}" class="btn btn-success">
+            <i class="bi bi-plus-lg"></i> Add New Product
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Product Grid -->
+    <div class="col-lg-9">
+      {% if search_query %}
+        <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+          <i class="bi bi-info-circle me-2"></i>
+          Search results for: <strong>{{ search_query }}</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endif %}
+
+      {% if products %}
+        <div class="row">
+          {% for product in products %}
+            <div class="col-md-4 mb-4">
+              <div class="card h-100 shadow-sm hover-shadow">
+                <a href="{{ url_for('product_detail', product_id=product.id) }}" 
+                   class="text-decoration-none">
+                  <img src="{{ url_for('static', filename=product.image) }}" 
+                       class="card-img-top p-3" 
+                       alt="{{ product.name }}" 
+                       style="height: 250px; object-fit: contain;">
+                </a>
+                <div class="card-body d-flex flex-column">
+                  <a href="{{ url_for('product_detail', product_id=product.id) }}" 
+                     class="text-decoration-none text-dark">
+                    <h5 class="card-title mb-2">{{ product.name }}</h5>
+                  </a>
+
+                  <div class="mb-2">
+                    {% for i in range(5) %}
+                      <i class="bi bi-star{% if i < product.average_rating|round(0, 'floor') %}-fill{% endif %} text-warning"></i>
+                    {% endfor %}
+                    <small class="text-muted ms-1">
+                      ({{ product.reviews|length }})
+                    </small>
+                  </div>
+
+                  {% if product.description %}
+                    <p class="card-text text-muted small mb-2">
+                      {{ product.description|truncate(100) }}
+                    </p>
+                  {% endif %}
+
+                  <div class="mt-auto">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-primary fw-bold h5 mb-0">
+                        ${{ "%.2f"|format(product.price) }}
+                      </span>
+                      <small class="text-muted">
+                        Added {{ product.created_at.strftime('%Y-%m-%d') }}
+                      </small>
+                    </div>
+
+                    {% if current_user.is_authenticated %}
+                      <div class="d-grid gap-2">
+                        <a href="{{ url_for('add_to_cart', product_id=product.id) }}" 
+                           class="btn btn-outline-primary">
+                          <i class="bi bi-cart-plus"></i> Add to Cart
+                        </a>
+                        <a href="{{ url_for('product_reviews', product_id=product.id) }}" 
+                           class="btn btn-outline-secondary btn-sm">
+                          <i class="bi bi-star"></i> View Reviews
+                        </a>
+                      </div>
+                    {% else %}
+                      <a href="{{ url_for('login') }}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-box-arrow-in-right"></i> Login to Purchase
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <i class="bi bi-search display-1 text-muted mb-3"></i>
+          <h3>No products found</h3>
+          {% if request.args %}
+            <p class="text-muted">No products matched your search criteria.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">
+              Clear Filters
+            </a>
+          {% else %}
+            <p class="text-muted">No products have been added yet.</p>
+            {% if current_user.is_authenticated %}
+              <a href="{{ url_for('create_product') }}" class="btn btn-primary mt-3">
+                Add First Product
+              </a>
+            {% endif %}
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.hover-shadow {
+  transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Fix number input arrows in Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+</style>
+
+<script>
+// Auto-submit form when sort option changes
+document.querySelector('select[name="sort"]').addEventListener('change', function() {
+  this.form.submit();
+});
+
+// Debounce helper function
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Auto-submit form when price inputs change (with debounce)
+const priceInputs = document.querySelectorAll('input[name="min_price"], input[name="max_price"]');
+priceInputs.forEach(input => {
+  input.addEventListener('input', debounce(function() {
+    if (this.value === '') {
+      this.removeAttribute('name');
+    }
+    this.form.submit();
+  }, 500));
+});
+</script>
+{% endblock %}

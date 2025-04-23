@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow">
+        <div class="card-body p-5">
+          <div class="text-center mb-4">
+            <i class="bi bi-person-plus-fill display-1 text-primary"></i>
+            <h2 class="mt-2">Create Account</h2>
+            <p class="text-muted">Join our e-commerce community</p>
+          </div>
+
+          <form method="POST" class="needs-validation" novalidate>
+            <div class="mb-3">
+              <label for="name" class="form-label">Full Name</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                <input type="text" class="form-control" id="name" name="name" 
+                       placeholder="Enter your full name" required>
+                <div class="invalid-feedback">Please enter your name.</div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Email address</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                <input type="email" class="form-control" id="email" name="email" 
+                       placeholder="Enter your email" required>
+                <div class="invalid-feedback">Please enter a valid email address.</div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="password" class="form-label">Password</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-key"></i></span>
+                <input type="password" class="form-control" id="password" name="password" 
+                       placeholder="Create a password" required 
+                       pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$">
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <div class="invalid-feedback">
+                  Password must be at least 8 characters long and include both letters and numbers.
+                </div>
+              </div>
+              <small class="text-muted">
+                Password must be at least 8 characters long and include both letters and numbers.
+              </small>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-lg">Register</button>
+            </div>
+
+            <p class="text-center mt-4 mb-0">
+              Already have an account? 
+              <a href="{{ url_for('login') }}" class="text-primary text-decoration-none">
+                Login here
+              </a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict'
+  var forms = document.querySelectorAll('.needs-validation')
+  Array.prototype.slice.call(forms).forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!form.checkValidity()) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      form.classList.add('was-validated')
+    }, false)
+  })
+
+  // Password visibility toggle
+  const togglePassword = document.querySelector('#togglePassword');
+  const password = document.querySelector('#password');
+  togglePassword.addEventListener('click', function () {
+    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+    password.setAttribute('type', type);
+    this.querySelector('i').classList.toggle('bi-eye');
+    this.querySelector('i').classList.toggle('bi-eye-slash');
+  });
+})()
+</script>
+{% endblock %}

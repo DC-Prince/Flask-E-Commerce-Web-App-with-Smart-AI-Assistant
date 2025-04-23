@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2><i class="bi bi-box"></i> My Orders</h2>
+    </div>
+    <div class="col-md-4">
+      <form method="GET" class="d-flex gap-2">
+        <select name="status" class="form-select" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          <option value="placed" {% if status == 'placed' %}selected{% endif %}>Placed</option>
+          <option value="processing" {% if status == 'processing' %}selected{% endif %}>Processing</option>
+          <option value="shipped" {% if status == 'shipped' %}selected{% endif %}>Shipped</option>
+          <option value="delivered" {% if status == 'delivered' %}selected{% endif %}>Delivered</option>
+          <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+        <select name="sort" class="form-select" onchange="this.form.submit()">
+          <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>Newest First</option>
+          <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>Oldest First</option>
+          <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price High to Low</option>
+          <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price Low to High</option>
+        </select>
+      </form>
+    </div>
+  </div>
+
+  {% if orders %}
+    {% for order in orders %}
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white">
+          <div class="row align-items-center">
+            <div class="col">
+              <span class="text-muted">#{{ order.id }}</span>
+              <small class="ms-2 text-muted">
+                {{ order.placed_time.strftime('%B %d, %Y at %I:%M %p') }}
+              </small>
+            </div>
+            <div class="col text-end">
+              <span class="badge {% if order.status == 'placed' %}bg-primary
+                            {% elif order.status == 'processing' %}bg-info
+                            {% elif order.status == 'shipped' %}bg-warning
+                            {% elif order.status == 'delivered' %}bg-success
+                            {% else %}bg-secondary{% endif %}">
+                {{ order.status|title }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-2">
+              <img src="{{ url_for('static', filename=order.product.image) }}"
+                   class="img-fluid rounded"
+                   alt="{{ order.product.name }}"
+                   style="height: 100px; object-fit: contain;">
+            </div>
+            <div class="col-md-6">
+              <h5 class="card-title mb-1">
+                <a href="{{ url_for('product_detail', product_id=order.product.id) }}"
+                   class="text-decoration-none text-dark">
+                  {{ order.product.name }}
+                </a>
+              </h5>
+              {% if order.product.description %}
+                <p class="card-text small text-muted mb-1">
+                  {{ order.product.description|truncate(100) }}
+                </p>
+              {% endif %}
+              <p class="card-text small mb-0">
+                <span class="text-muted">Quantity:</span> {{ order.quantity }}
+              </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+              <p class="card-text mb-1">
+                <span class="text-muted">Price per item:</span>
+                <span class="text-primary">${{ "%.2f"|format(order.product_price) }}</span>
+              </p>
+              <p class="card-text">
+                <span class="text-muted">Total:</span>
+                <strong class="text-success">
+                  ${{ "%.2f"|format(order.product_price * order.quantity) }}
+                </strong>
+              </p>
+              {% if order.status == 'placed' %}
+                <form method="POST" action="{{ url_for('cancel_order', order_id=order.id) }}"
+                      onsubmit="return confirm('Are you sure you want to cancel this order?');"
+                      class="mt-2">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-x-circle"></i> Cancel Order
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-box-seam display-1 text-muted mb-3"></i>
+      <h4>No orders found</h4>
+      {% if status %}
+        <p class="text-muted">No orders with status "{{ status }}" found.</p>
+        <a href="{{ url_for('orders') }}" class="btn btn-primary mt-3">View All Orders</a>
+      {% else %}
+        <p class="text-muted">You haven't placed any orders yet.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Start Shopping</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('select').forEach(select => {
+  select.addEventListener('change', function() {
+    this.form.submit();
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('orders') }}">Orders</a></li>
+      <li class="breadcrumb-item active">Search Orders</li>
+    </ol>
+  </nav>
+
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-4">Search Orders by Date</h4>
+          
+          <form method="GET" action="{{ url_for('search_orders') }}" class="mb-4">
+            <div class="row g-3 align-items-end">
+              <div class="col-sm-8">
+                <label for="date" class="form-label">Select Date</label>
+                <input type="date" class="form-control" id="date" name="date"
+                       value="{{ date_str }}" required
+                       max="{{ now.strftime('%Y-%m-%d') }}">
+              </div>
+              <div class="col-sm-4">
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="bi bi-search"></i> Search
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {% if date_str %}
+            {% if orders %}
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Product</th>
+                      <th>Quantity</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for order in orders %}
+                      <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>
+                          <div class="d-flex align-items-center">
+                            <img src="{{ url_for('static', filename=order.product.image) }}"
+                                 alt="{{ order.product.name }}"
+                                 class="me-2"
+                                 style="width: 40px; height: 40px; object-fit: contain;">
+                            <div>
+                              <a href="{{ url_for('product_detail', product_id=order.product.id) }}"
+                                 class="text-decoration-none">
+                                {{ order.product.name }}
+                              </a>
+                            </div>
+                          </div>
+                        </td>
+                        <td>{{ order.quantity }}</td>
+                        <td>${{ "%.2f"|format(order.product_price * order.quantity) }}</td>
+                        <td>
+                          <span class="badge {% if order.status == 'placed' %}bg-primary
+                                      {% elif order.status == 'processing' %}bg-info
+                                      {% elif order.status == 'shipped' %}bg-warning
+                                      {% elif order.status == 'delivered' %}bg-success
+                                      {% else %}bg-secondary{% endif %}">
+                            {{ order.status|title }}
+                          </span>
+                        </td>
+                        <td>{{ order.placed_time.strftime('%I:%M %p') }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="alert alert-info mt-3">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-info-circle-fill me-2"></i>
+                  <div>
+                    Found {{ orders|length }} order{{ 's' if orders|length != 1 }}
+                    from {{ date_str }}
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <div class="text-center py-5">
+                <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
+                <h3>No Orders Found</h3>
+                <p class="text-muted">
+                  No orders were found for {{ date_str }}.
+                  <br>Try selecting a different date.
+                </p>
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="text-center py-5">
+              <i class="bi bi-calendar display-1 text-muted mb-3"></i>
+              <h3>Search Your Orders</h3>
+              <p class="text-muted">
+                Select a date above to view your orders from that day.
+              </p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Quick Links</h5>
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('orders', status='placed') }}" 
+               class="btn btn-outline-primary">
+              <i class="bi bi-box-seam"></i> New Orders
+            </a>
+            <a href="{{ url_for('orders', status='processing') }}" 
+               class="btn btn-outline-info">
+              <i class="bi bi-gear"></i> Processing Orders
+            </a>
+            <a href="{{ url_for('orders', status='shipped') }}" 
+               class="btn btn-outline-warning">
+              <i class="bi bi-truck"></i> Shipped Orders
+            </a>
+            <a href="{{ url_for('orders', status='delivered') }}" 
+               class="btn btn-outline-success">
+              <i class="bi bi-check2-circle"></i> Delivered Orders
+            </a>
+            <a href="{{ url_for('orders', sort='price_high') }}" 
+               class="btn btn-outline-secondary">
+              <i class="bi bi-currency-dollar"></i> High Value Orders
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Tips</h5>
+          <ul class="list-unstyled mb-0">
+            <li class="mb-2">
+              <i class="bi bi-calendar-check text-success me-2"></i>
+              Search orders by specific dates
+            </li>
+            <li class="mb-2">
+              <i class="bi bi-filter text-primary me-2"></i>
+              Filter orders by status
+            </li>
+            <li class="mb-2">
+              <i class="bi bi-sort-down text-info me-2"></i>
+              Sort orders by date or price
+            </li>
+            <li>
+              <i class="bi bi-eye text-warning me-2"></i>
+              Track order status updates
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Set max date to today
+document.getElementById('date').max = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "errors/base_error.html" %}
+
+{% block error_content %}
+<div class="error-page">
+    <i class="bi bi-question-circle display-1 text-muted mb-4"></i>
+    <h1 class="display-4">404</h1>
+    <h2 class="h4 text-muted mb-4">Page Not Found</h2>
+    <p class="text-muted mb-4">
+        The page you are looking for might have been removed,
+        had its name changed, or is temporarily unavailable.
+    </p>
+    <div class="alert alert-info d-inline-block">
+        <i class="bi bi-info-circle me-2"></i>
+        If you typed the URL directly, please make sure the spelling is correct.
+    </div>
+</div>
+{% endblock %}

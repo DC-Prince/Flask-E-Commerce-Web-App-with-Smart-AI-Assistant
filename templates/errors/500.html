@@ -1,0 +1,16 @@
+{% extends "errors/base_error.html" %}
+
+{% block error_content %}
+<div class="error-page">
+    <i class="bi bi-exclamation-triangle display-1 text-warning mb-4"></i>
+    <h1 class="display-4">500</h1>
+    <h2 class="h4 text-muted mb-4">Internal Server Error</h2>
+    <p class="text-muted mb-4">
+        Something went wrong on our end. Our team has been notified and is working to fix it.
+    </p>
+    <div class="alert alert-warning d-inline-block">
+        <i class="bi bi-lightbulb me-2"></i>
+        Please try again in a few moments or contact support if the problem persists.
+    </div>
+</div>
+{% endblock %}

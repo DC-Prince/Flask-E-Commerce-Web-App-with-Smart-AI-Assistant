@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('product_detail', product_id=product.id) }}">{{ product.name }}</a>
+      </li>
+      <li class="breadcrumb-item active">Reviews</li>
+    </ol>
+  </nav>
+
+  <div class="row">
+    <!-- Product Summary -->
+    <div class="col-md-4 mb-4">
+      <div class="card shadow-sm">
+        <img src="{{ url_for('static', filename=product.image) }}" 
+             class="card-img-top"
+             alt="{{ product.name }}">
+        <div class="card-body">
+          <h5 class="card-title">{{ product.name }}</h5>
+          <div class="d-flex align-items-center mb-2">
+            <div class="text-warning me-2">
+              {% for i in range(5) %}
+                <i class="bi bi-star{% if i < product.average_rating %}-fill{% endif %}"></i>
+              {% endfor %}
+            </div>
+            <span class="text-muted">({{ total_reviews }} reviews)</span>
+          </div>
+          <p class="card-text text-muted">{{ product.description[:150] }}...</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="h5 mb-0">${{ "%.2f"|format(product.price) }}</span>
+            <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-outline-primary">
+              View Details
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rating Distribution -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h6 class="card-title">Rating Distribution</h6>
+          {% for rating in range(5, 0, -1) %}
+            <div class="d-flex align-items-center mb-2">
+              <div class="text-muted small me-3">{{ rating }} stars</div>
+              <div class="progress flex-grow-1" style="height: 8px;">
+                {% set percentage = (rating_counts[rating] / total_reviews * 100) if total_reviews > 0 else 0 %}
+                <div class="progress-bar bg-warning" style="width: {{ percentage }}%"></div>
+              </div>
+              <div class="text-muted small ms-3">{{ rating_counts[rating] }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="col-md-8">
+      {% if current_user.is_authenticated and can_review %}
+        <!-- Review Form -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <h5 class="card-title mb-4">Write a Review</h5>
+            <form method="POST" action="{{ url_for('add_review', product_id=product.id) }}" class="needs-validation" novalidate>
+              <div class="mb-3">
+                <label class="form-label">Rating</label>
+                <div class="rating-input">
+                  {% for i in range(5, 0, -1) %}
+                    <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" required>
+                    <label for="star{{ i }}" title="{{ i }} stars">★</label>
+                  {% endfor %}
+                </div>
+                <div class="invalid-feedback">Please select a rating.</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="review_title" class="form-label">Review Title</label>
+                <input type="text" class="form-control" id="review_title" name="title" 
+                       required maxlength="100">
+                <div class="invalid-feedback">Please provide a title for your review.</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="review_comment" class="form-label">Your Review</label>
+                <textarea class="form-control" id="review_comment" name="comment" 
+                          rows="4" required minlength="10" maxlength="1000"></textarea>
+                <div class="invalid-feedback">
+                  Please write a review (minimum 10 characters).
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-star"></i> Submit Review
+              </button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Reviews List -->
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="card-title mb-0">Customer Reviews</h5>
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                      type="button" data-bs-toggle="dropdown">
+                Sort by: {{ sort_by|title }}
+              </button>
+              <ul class="dropdown-menu">
+                <li>
+                  <a class="dropdown-item {% if sort_by == 'newest' %}active{% endif %}" 
+                  href="{{ url_for('product_reviews', product_id=product.id, sort='newest') }}"
+                    Newest First
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item {% if sort_by == 'highest' %}active{% endif %}"
+                     href="{{ url_for('product_reviews', product_id=product.id, sort='highest') }}">
+                    Highest Rating
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item {% if sort_by == 'lowest' %}active{% endif %}"
+                     href="{{ url_for('product_reviews', product_id=product.id, sort='lowest') }}">
+                    Lowest Rating
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {% if reviews %}
+            {% for review in reviews %}
+              <div class="review-item mb-4">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <div class="text-warning mb-1">
+                      {% for i in range(5) %}
+                        <i class="bi bi-star{% if i < review.rating %}-fill{% endif %}"></i>
+                      {% endfor %}
+                    </div>
+                    <h6 class="mb-1">{{ review.title }}</h6>
+                  </div>
+                  <small class="text-muted">
+                    {{ review.created_at.strftime('%B %d, %Y') }}
+                  </small>
+                </div>
+                
+                <p class="review-text mb-2">{{ review.comment }}</p>
+                
+                <div class="d-flex align-items-center">
+                  <span class="text-muted small">
+                    By {{ review.customer.name }}
+                    {% if review.verified_purchase %}
+                      <span class="badge bg-success ms-2">Verified Purchase</span>
+                    {% endif %}
+                  </span>
+                </div>
+
+                {% if review.customer_id == current_user.id %}
+                  <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-secondary me-2" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#editReviewModal{{ review.id }}">
+                      <i class="bi bi-pencil"></i> Edit
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteReviewModal{{ review.id }}">
+                      <i class="bi bi-trash"></i> Delete
+                    </button>
+                  </div>
+
+                  <!-- Edit Review Modal -->
+                  <div class="modal fade" id="editReviewModal{{ review.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Edit Review</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST" action="{{ url_for('edit_review', review_id=review.id) }}">
+                          <div class="modal-body">
+                            <div class="mb-3">
+                              <label class="form-label">Rating</label>
+                              <div class="rating-input">
+                                {% for i in range(5, 0, -1) %}
+                                  <input type="radio" id="editStar{{ review.id }}{{ i }}" 
+                                         name="rating" value="{{ i }}"
+                                         {% if review.rating == i %}checked{% endif %}>
+                                  <label for="editStar{{ review.id }}{{ i }}">★</label>
+                                {% endfor %}
+                              </div>
+                            </div>
+
+                            <div class="mb-3">
+                              <label for="editTitle{{ review.id }}" class="form-label">
+                                Review Title
+                              </label>
+                              <input type="text" class="form-control" 
+                                     id="editTitle{{ review.id }}" name="title"
+                                     value="{{ review.title }}" required>
+                            </div>
+
+                            <div class="mb-3">
+                              <label for="editComment{{ review.id }}" class="form-label">
+                                Your Review
+                              </label>
+                              <textarea class="form-control" id="editComment{{ review.id }}"
+                                        name="comment" rows="4" required>{{ review.comment }}</textarea>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" 
+                                    data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                              Save Changes
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Delete Review Modal -->
+                  <div class="modal fade" id="deleteReviewModal{{ review.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Delete Review</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                          <p>Are you sure you want to delete your review? This action cannot be undone.</p>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" 
+                                  data-bs-dismiss="modal">Cancel</button>
+                          <form method="POST" action="{{ url_for('delete_review', review_id=review.id) }}"
+                                class="d-inline">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+              {% if not loop.last %}<hr>{% endif %}
+            {% endfor %}
+
+            <!-- Pagination -->
+            {% if pages > 1 %}
+              <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                  <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('reviews', product_id=product.id, page=page-1) }}">
+                      Previous
+                    </a>
+                  </li>
+                  {% for p in range(1, pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                      <a class="page-link" href="{{ url_for('reviews', product_id=product.id, page=p) }}">
+                        {{ p }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                  <li class="page-item {% if page == pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('reviews', product_id=product.id, page=page+1) }}">
+                      Next
+                    </a>
+                  </li>
+                </ul>
+              </nav>
+            {% endif %}
+          {% else %}
+            <div class="text-center py-5">
+              <i class="bi bi-chat-dots display-1 text-muted mb-3"></i>
+              <h5>No Reviews Yet</h5>
+              <p class="text-muted">
+                Be the first to review this product!
+                {% if not current_user.is_authenticated %}
+                  <br>
+                  <a href="{{ url_for('login') }}">Log in</a> to write a review.
+                {% endif %}
+              </p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.rating-input {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  gap: 0.25rem;
+}
+
+.rating-input input {
+  display: none;
+}
+
+.rating-input label {
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: #ddd;
+}
+
+.rating-input label:hover,
+.rating-input label:hover ~ label,
+.rating-input input:checked ~ label {
+  color: #ffc107;
+}
+
+.review-text {
+  white-space: pre-line;
+}
+</style>
+
+<script>
+// Form validation
+(function() {
+  'use strict';
+  var forms = document.querySelectorAll('.needs-validation');
+  Array.from(forms).forEach(function(form) {
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+})();
+</script>
+{% endblock %}
